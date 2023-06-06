@@ -1,0 +1,728 @@
+= Metrics
+
+== Metrics/AbcSize
+
+|===
+| Enabled by default | Safe | Supports autocorrection | Version Added | Version Changed
+
+| Enabled
+| Yes
+| No
+| 0.27
+| 1.5
+|===
+
+Checks that the ABC size of methods is not higher than the
+configured maximum. The ABC size is based on assignments, branches
+(method calls), and conditions. See http://c2.com/cgi/wiki?AbcMetric
+and https://en.wikipedia.org/wiki/ABC_Software_Metric.
+
+Interpreting ABC size:
+
+* <= 17 satisfactory
+* 18..30 unsatisfactory
+* > 30 dangerous
+
+You can have repeated "attributes" calls count as a single "branch".
+For this purpose, attributes are any method with no argument; no attempt
+is meant to distinguish actual `attr_reader` from other methods.
+
+This cop also takes into account `AllowedMethods` (defaults to `[]`)
+And `AllowedPatterns` (defaults to `[]`)
+
+=== Examples
+
+==== CountRepeatedAttributes: false (default is true)
+
+[source,ruby]
+----
+# `model` and `current_user`, referenced 3 times each,
+# are each counted as only 1 branch each if
+# `CountRepeatedAttributes` is set to 'false'
+
+def search
+  @posts = model.active.visible_by(current_user)
+            .search(params[:q])
+  @posts = model.some_process(@posts, current_user)
+  @posts = model.another_process(@posts, current_user)
+
+  render 'pages/search/page'
+end
+----
+
+=== Configurable attributes
+
+|===
+| Name | Default value | Configurable values
+
+| AllowedMethods
+| `[]`
+| Array
+
+| AllowedPatterns
+| `[]`
+| Array
+
+| CountRepeatedAttributes
+| `true`
+| Boolean
+
+| Max
+| `17`
+| Integer
+|===
+
+=== References
+
+* http://c2.com/cgi/wiki?AbcMetric
+* https://en.wikipedia.org/wiki/ABC_Software_Metric
+
+== Metrics/BlockLength
+
+|===
+| Enabled by default | Safe | Supports autocorrection | Version Added | Version Changed
+
+| Enabled
+| Yes
+| No
+| 0.44
+| 1.5
+|===
+
+Checks if the length of a block exceeds some maximum value.
+Comment lines can optionally be ignored.
+The maximum allowed length is configurable.
+The cop can be configured to ignore blocks passed to certain methods.
+
+You can set constructs you want to fold with `CountAsOne`.
+Available are: 'array', 'hash', 'heredoc', and 'method_call'. Each construct
+will be counted as one line regardless of its actual size.
+
+
+NOTE: The `ExcludedMethods` configuration is deprecated and only kept
+for backwards compatibility. Please use `AllowedMethods` and `AllowedPatterns`
+instead. By default, there are no methods to allowed.
+
+NOTE: This cop does not apply for `Struct` definitions.
+
+=== Examples
+
+==== CountAsOne: ['array', 'heredoc', 'method_call']
+
+[source,ruby]
+----
+something do
+  array = [         # +1
+    1,
+    2
+  ]
+
+  hash = {          # +3
+    key: 'value'
+  }
+
+  msg = <<~HEREDOC  # +1
+    Heredoc
+    content.
+  HEREDOC
+
+  foo(              # +1
+    1,
+    2
+  )
+end                 # 6 points
+----
+
+=== Configurable attributes
+
+|===
+| Name | Default value | Configurable values
+
+| CountComments
+| `false`
+| Boolean
+
+| Max
+| `25`
+| Integer
+
+| CountAsOne
+| `[]`
+| Array
+
+| AllowedMethods
+| `refine`
+| Array
+
+| AllowedPatterns
+| `[]`
+| Array
+
+| Exclude
+| `+**/*.gemspec+`
+| Array
+|===
+
+== Metrics/BlockNesting
+
+|===
+| Enabled by default | Safe | Supports autocorrection | Version Added | Version Changed
+
+| Enabled
+| Yes
+| No
+| 0.25
+| 0.47
+|===
+
+Checks for excessive nesting of conditional and looping
+constructs.
+
+You can configure if blocks are considered using the `CountBlocks`
+option. When set to `false` (the default) blocks are not counted
+towards the nesting level. Set to `true` to count blocks as well.
+
+The maximum level of nesting allowed is configurable.
+
+=== Configurable attributes
+
+|===
+| Name | Default value | Configurable values
+
+| CountBlocks
+| `false`
+| Boolean
+
+| Max
+| `3`
+| Integer
+|===
+
+=== References
+
+* https://rubystyle.guide#three-is-the-number-thou-shalt-count
+
+== Metrics/ClassLength
+
+|===
+| Enabled by default | Safe | Supports autocorrection | Version Added | Version Changed
+
+| Enabled
+| Yes
+| No
+| 0.25
+| 0.87
+|===
+
+Checks if the length of a class exceeds some maximum value.
+Comment lines can optionally be ignored.
+The maximum allowed length is configurable.
+
+You can set constructs you want to fold with `CountAsOne`.
+Available are: 'array', 'hash', 'heredoc', and 'method_call'. Each construct
+will be counted as one line regardless of its actual size.
+
+NOTE: This cop also applies for `Struct` definitions.
+
+=== Examples
+
+==== CountAsOne: ['array', 'heredoc', 'method_call']
+
+[source,ruby]
+----
+class Foo
+  ARRAY = [         # +1
+    1,
+    2
+  ]
+
+  HASH = {          # +3
+    key: 'value'
+  }
+
+  MSG = <<~HEREDOC  # +1
+    Heredoc
+    content.
+  HEREDOC
+
+  foo(              # +1
+    1,
+    2
+  )
+end                 # 6 points
+----
+
+=== Configurable attributes
+
+|===
+| Name | Default value | Configurable values
+
+| CountComments
+| `false`
+| Boolean
+
+| Max
+| `100`
+| Integer
+
+| CountAsOne
+| `[]`
+| Array
+|===
+
+== Metrics/CollectionLiteralLength
+
+|===
+| Enabled by default | Safe | Supports autocorrection | Version Added | Version Changed
+
+| Pending
+| Yes
+| No
+| 1.47
+| -
+|===
+
+Checks for literals with extremely many entries. This is indicative of
+configuration or data that may be better extracted somewhere else, like
+a database, fetched from an API, or read from a non-code file (CSV,
+JSON, YAML, etc.).
+
+=== Examples
+
+[source,ruby]
+----
+# bad
+# Huge Array literal
+[1, 2, '...', 999_999_999]
+
+# bad
+# Huge Hash literal
+{ 1 => 1, 2 => 2, '...' => '...', 999_999_999 => 999_999_999}
+
+# bad
+# Huge Set "literal"
+Set[1, 2, '...', 999_999_999]
+
+# good
+# Reasonably sized Array literal
+[1, 2, '...', 10]
+
+# good
+# Reading huge Array from external data source
+# File.readlines('numbers.txt', chomp: true).map!(&:to_i)
+
+# good
+# Reasonably sized Hash literal
+{ 1 => 1, 2 => 2, '...' => '...', 10 => 10}
+
+# good
+# Reading huge Hash from external data source
+CSV.foreach('numbers.csv', headers: true).each_with_object({}) do |row, hash|
+  hash[row["key"].to_i] = row["value"].to_i
+end
+
+# good
+# Reasonably sized Set "literal"
+Set[1, 2, '...', 10]
+
+# good
+# Reading huge Set from external data source
+SomeFramework.config_for(:something)[:numbers].to_set
+----
+
+=== Configurable attributes
+
+|===
+| Name | Default value | Configurable values
+
+| LengthThreshold
+| `250`
+| Integer
+|===
+
+== Metrics/CyclomaticComplexity
+
+|===
+| Enabled by default | Safe | Supports autocorrection | Version Added | Version Changed
+
+| Enabled
+| Yes
+| No
+| 0.25
+| 0.81
+|===
+
+Checks that the cyclomatic complexity of methods is not higher
+than the configured maximum. The cyclomatic complexity is the number of
+linearly independent paths through a method. The algorithm counts
+decision points and adds one.
+
+An if statement (or unless or ?:) increases the complexity by one. An
+else branch does not, since it doesn't add a decision point. The &&
+operator (or keyword and) can be converted to a nested if statement,
+and ||/or is shorthand for a sequence of ifs, so they also add one.
+Loops can be said to have an exit condition, so they add one.
+Blocks that are calls to builtin iteration methods
+(e.g. `ary.map{...}) also add one, others are ignored.
+
+  def each_child_node(*types)               # count begins: 1
+    unless block_given?                     # unless: +1
+      return to_enum(__method__, *types)
+
+    children.each do |child|                # each{}: +1
+      next unless child.is_a?(Node)         # unless: +1
+
+      yield child if types.empty? ||        # if: +1, ||: +1
+                     types.include?(child.type)
+    end
+
+    self
+  end                                       # total: 6
+
+=== Configurable attributes
+
+|===
+| Name | Default value | Configurable values
+
+| AllowedMethods
+| `[]`
+| Array
+
+| AllowedPatterns
+| `[]`
+| Array
+
+| Max
+| `7`
+| Integer
+|===
+
+== Metrics/MethodLength
+
+|===
+| Enabled by default | Safe | Supports autocorrection | Version Added | Version Changed
+
+| Enabled
+| Yes
+| No
+| 0.25
+| 1.5
+|===
+
+Checks if the length of a method exceeds some maximum value.
+Comment lines can optionally be allowed.
+The maximum allowed length is configurable.
+
+You can set constructs you want to fold with `CountAsOne`.
+Available are: 'array', 'hash', 'heredoc', and 'method_call'. Each construct
+will be counted as one line regardless of its actual size.
+
+NOTE: The `ExcludedMethods` and `IgnoredMethods` configuration is
+deprecated and only kept for backwards compatibility.
+Please use `AllowedMethods` and `AllowedPatterns` instead.
+By default, there are no methods to allowed.
+
+=== Examples
+
+==== CountAsOne: ['array', 'heredoc', 'method_call']
+
+[source,ruby]
+----
+def m
+  array = [       # +1
+    1,
+    2
+  ]
+
+  hash = {        # +3
+    key: 'value'
+  }
+
+  <<~HEREDOC      # +1
+    Heredoc
+    content.
+  HEREDOC
+
+  foo(            # +1
+    1,
+    2
+  )
+end               # 6 points
+----
+
+=== Configurable attributes
+
+|===
+| Name | Default value | Configurable values
+
+| CountComments
+| `false`
+| Boolean
+
+| Max
+| `10`
+| Integer
+
+| CountAsOne
+| `[]`
+| Array
+
+| AllowedMethods
+| `[]`
+| Array
+
+| AllowedPatterns
+| `[]`
+| Array
+|===
+
+=== References
+
+* https://rubystyle.guide#short-methods
+
+== Metrics/ModuleLength
+
+|===
+| Enabled by default | Safe | Supports autocorrection | Version Added | Version Changed
+
+| Enabled
+| Yes
+| No
+| 0.31
+| 0.87
+|===
+
+Checks if the length of a module exceeds some maximum value.
+Comment lines can optionally be ignored.
+The maximum allowed length is configurable.
+
+You can set constructs you want to fold with `CountAsOne`.
+Available are: 'array', 'hash', 'heredoc', and 'method_call'. Each construct
+will be counted as one line regardless of its actual size.
+
+=== Examples
+
+==== CountAsOne: ['array', 'heredoc', 'method_call']
+
+[source,ruby]
+----
+module M
+  ARRAY = [         # +1
+    1,
+    2
+  ]
+
+  HASH = {          # +3
+    key: 'value'
+  }
+
+  MSG = <<~HEREDOC  # +1
+    Heredoc
+    content.
+  HEREDOC
+
+  foo(              # +1
+    1,
+    2
+  )
+end                 # 6 points
+----
+
+=== Configurable attributes
+
+|===
+| Name | Default value | Configurable values
+
+| CountComments
+| `false`
+| Boolean
+
+| Max
+| `100`
+| Integer
+
+| CountAsOne
+| `[]`
+| Array
+|===
+
+== Metrics/ParameterLists
+
+|===
+| Enabled by default | Safe | Supports autocorrection | Version Added | Version Changed
+
+| Enabled
+| Yes
+| No
+| 0.25
+| 1.5
+|===
+
+Checks for methods with too many parameters.
+
+The maximum number of parameters is configurable.
+Keyword arguments can optionally be excluded from the total count,
+as they add less complexity than positional or optional parameters.
+
+Any number of arguments for `initialize` method inside a block of
+`Struct.new` and `Data.define` like this is always allowed:
+
+[source,ruby]
+----
+Struct.new(:one, :two, :three, :four, :five, keyword_init: true) do
+  def initialize(one:, two:, three:, four:, five:)
+  end
+end
+----
+
+This is because checking the number of arguments of the `initialize` method
+does not make sense.
+
+NOTE: Explicit block argument `&block` is not counted to prevent
+erroneous change that is avoided by making block argument implicit.
+
+This cop also checks for the maximum number of optional parameters.
+This can be configured using the `MaxOptionalParameters` config option.
+
+=== Examples
+
+==== Max: 3
+
+[source,ruby]
+----
+# good
+def foo(a, b, c = 1)
+end
+----
+
+==== Max: 2
+
+[source,ruby]
+----
+# bad
+def foo(a, b, c = 1)
+end
+----
+
+==== CountKeywordArgs: true (default)
+
+[source,ruby]
+----
+# counts keyword args towards the maximum
+
+# bad (assuming Max is 3)
+def foo(a, b, c, d: 1)
+end
+
+# good (assuming Max is 3)
+def foo(a, b, c: 1)
+end
+----
+
+==== CountKeywordArgs: false
+
+[source,ruby]
+----
+# don't count keyword args towards the maximum
+
+# good (assuming Max is 3)
+def foo(a, b, c, d: 1)
+end
+----
+
+==== MaxOptionalParameters: 3 (default)
+
+[source,ruby]
+----
+# good
+def foo(a = 1, b = 2, c = 3)
+end
+----
+
+==== MaxOptionalParameters: 2
+
+[source,ruby]
+----
+# bad
+def foo(a = 1, b = 2, c = 3)
+end
+----
+
+=== Configurable attributes
+
+|===
+| Name | Default value | Configurable values
+
+| Max
+| `5`
+| Integer
+
+| CountKeywordArgs
+| `true`
+| Boolean
+
+| MaxOptionalParameters
+| `3`
+| Integer
+|===
+
+=== References
+
+* https://rubystyle.guide#too-many-params
+
+== Metrics/PerceivedComplexity
+
+|===
+| Enabled by default | Safe | Supports autocorrection | Version Added | Version Changed
+
+| Enabled
+| Yes
+| No
+| 0.25
+| 0.81
+|===
+
+Tries to produce a complexity score that's a measure of the
+complexity the reader experiences when looking at a method. For that
+reason it considers `when` nodes as something that doesn't add as much
+complexity as an `if` or a `&&`. Except if it's one of those special
+`case`/`when` constructs where there's no expression after `case`. Then
+the cop treats it as an `if`/`elsif`/`elsif`... and lets all the `when`
+nodes count. In contrast to the CyclomaticComplexity cop, this cop
+considers `else` nodes as adding complexity.
+
+=== Examples
+
+[source,ruby]
+----
+def my_method                   # 1
+  if cond                       # 1
+    case var                    # 2 (0.8 + 4 * 0.2, rounded)
+    when 1 then func_one
+    when 2 then func_two
+    when 3 then func_three
+    when 4..10 then func_other
+    end
+  else                          # 1
+    do_something until a && b   # 2
+  end                           # ===
+end                             # 7 complexity points
+----
+
+=== Configurable attributes
+
+|===
+| Name | Default value | Configurable values
+
+| AllowedMethods
+| `[]`
+| Array
+
+| AllowedPatterns
+| `[]`
+| Array
+
+| Max
+| `8`
+| Integer
+|===
